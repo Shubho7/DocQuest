@@ -108,20 +108,64 @@ def llm(context: str, prompt: str):
     )
 
     for chunk in response:
-        if not chunk.get("done", False):
-            yield chunk["message"]["content"]
-        else:
-            break
+         if chunk.choices[0].delta.content is not None:
+            yield chunk.choices[0].delta.content
 
 # Re-rank docs
-def re_rank(documents: list[str]) -> tuple[str, list[int]]:
+def re_rank(documents: list[str], query: str) -> tuple[str, list[int]]:
     relevant_text = ""
     relevant_text_ids = []
-
     encoder_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-    ranks = encoder_model.rank(prompt, documents, top_k=3)
-    for rank in ranks:
-        relevant_text += documents[rank["corpus_id"]]
-        relevant_text_ids.append(rank["corpus_id"])
 
+    if not documents:
+        return "", []
+    
+    if documents and isinstance(documents[0], list):
+        documents = [
+            doc[0] if isinstance(doc, list) and len(doc) > 0 else (doc if not isinstance(doc, list) else "")
+            for doc in documents
+        ]
+
+    ranks = encoder_model.rank(query, documents, top_k=3)
+    for rank in ranks:
+        corpus_id = rank["corpus_id"]
+        if corpus_id < len(documents):
+            relevant_text += documents[corpus_id] + "\n"
+            relevant_text_ids.append(corpus_id)
+       
     return relevant_text, relevant_text_ids
+
+# Main function
+if __name__ == "__main__":
+    with st.sidebar:
+        st.set_page_config(page_title="DocQuest")
+        uploaded_file = st.file_uploader(
+            "**📑 Upload PDF files**", type=["pdf"], accept_multiple_files=False
+        )
+
+        process = st.button("⚡️Process")
+        if uploaded_file and process:
+            normalize_uploaded_file_name = uploaded_file.name.translate(
+                str.maketrans({"-": "_", ".": "_", " ": "_"})
+            )
+            all_splits = process_document(uploaded_file)
+            add_to_vector_collection(all_splits, normalize_uploaded_file_name)
+
+    st.header("Start your Quest")
+    prompt = st.text_area("How can I help you today?")
+    ask = st.button("Ask")
+
+    if ask and prompt:
+        results = query_collection(prompt)
+        context_docs = results.get("documents")
+        if context_docs:
+            relevant_text, relevant_text_ids = re_rank(context_docs, prompt)
+            response = llm(context=relevant_text, prompt=prompt)
+            st.write_stream(response)
+
+            with st.expander("See retrieved documents"):
+                st.write(results)
+
+            with st.expander("See most relevant document IDs"):
+                st.write(relevant_text_ids)
+                st.write(relevant_text)
