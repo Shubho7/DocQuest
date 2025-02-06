@@ -53,3 +53,14 @@ def process_document(uploaded_file: UploadedFile) -> list[Document]:
     )
 
     return text_splitter.split_documents(docs)
+
+# Get vector collection
+def get_vector_collection() -> chromadb.Collection:
+    google_ef = embedding_functions.GoogleGenerativeAiEmbeddingFunction(api_key=os.getenv("GOOGLE_API_KEY"))
+
+    chroma_client = chromadb.PersistentClient(path="./demo-rag-chroma")
+    return chroma_client.get_or_create_collection(
+        name="rag_app",
+        embedding_function=google_ef,
+        metadata={"hnsw:space": "cosine"},
+    )
