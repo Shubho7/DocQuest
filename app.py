@@ -88,3 +88,27 @@ def query_collection(prompt: str, n_results: int = 10):
     results = collection.query(query_texts=[prompt], n_results=n_results)
 
     return results
+
+# Generate response
+def llm(context: str, prompt: str):
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        stream=True,
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt,
+            },
+            {
+                "role": "user",
+                "content": f"Context: {context}, Question: {prompt}",
+            },
+        ],
+    )
+    
+    for chunk in response:
+        if not chunk.get("done", False):
+            yield chunk["message"]["content"]
+        else:
+            break
