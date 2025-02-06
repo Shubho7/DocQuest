@@ -54,7 +54,7 @@ def process_document(uploaded_file: UploadedFile) -> list[Document]:
 
     return text_splitter.split_documents(docs)
 
-# Get vector collection
+# Vector DB
 def get_vector_collection() -> chromadb.Collection:
     google_ef = embedding_functions.GoogleGenerativeAiEmbeddingFunction(api_key=os.getenv("GOOGLE_API_KEY"))
 
@@ -64,3 +64,20 @@ def get_vector_collection() -> chromadb.Collection:
         embedding_function=google_ef,
         metadata={"hnsw:space": "cosine"},
     )
+
+# Store data in vector DB
+def add_to_vector_collection(all_splits: list[Document], file_name: str):
+    collection = get_vector_collection()
+    documents, metadatas, ids = [], [], []
+
+    for idx, split in enumerate(all_splits):
+        documents.append(split.page_content)
+        metadatas.append(split.metadata)
+        ids.append(f"{file_name}_{idx}")
+
+    collection.upsert(
+        documents=documents,
+        metadatas=metadatas,
+        ids=ids,
+    )
+    st.success("File added successfully!")
