@@ -27,10 +27,29 @@ To answer the question:
 
 Format your response as follows:
 1. Use clear and concise language.
-2. Organize your answer into paragraphs for readability.
-3. Use bullet points or numbered lists where appropriate to break down complex information.
-4. If relevant, include any headings or subheadings to structure your response.
-5. Ensure proper grammar, punctuation, and spelling throughout your answer.
+2. Write an attention-grabbing introduction and a compelling conclusion.
+3. Organize your answer into paragraphs for readability.
+4. Use bullet points or numbered lists where appropriate to break down complex information.
+5. Well-structured body sections with proper headings and subheadings.
+6. Ensure proper english grammar, punctuation, style and spelling throughout your answer.
+7. Summarize complex information with clarity and precision.
 
 **VERY IMPORTANT:** Base your entire response solely on the information provided in the context. Do not include any external knowledge or assumptions not present in the given text.
 """
+
+# Process document
+def process_document(uploaded_file: UploadedFile) -> list[Document]:
+    temp_file = tempfile.NamedTemporaryFile("wb", suffix=".pdf", delete=False)
+    temp_file.write(uploaded_file.read())
+
+    loader = PyMuPDFLoader(temp_file.name)
+    docs = loader.load()
+    os.unlink(temp_file.name) 
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=400,
+        chunk_overlap=100,
+        separators=["\n\n", "\n", ".", "?", "!", " ", ""],
+    )
+
+    return text_splitter.split_documents(docs)
