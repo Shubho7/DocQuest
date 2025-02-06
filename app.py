@@ -81,3 +81,10 @@ def add_to_vector_collection(all_splits: list[Document], file_name: str):
         ids=ids,
     )
     st.success("File added successfully!")
+
+# Process user query
+def query_collection(prompt: str, n_results: int = 10):
+    collection = get_vector_collection()
+    results = collection.query(query_texts=[prompt], n_results=n_results)
+
+    return results
