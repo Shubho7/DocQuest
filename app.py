@@ -57,20 +57,30 @@ Adhere to these principles to maintain high response accuracy, contextual fideli
 
 # Process document
 def process_document(uploaded_file: UploadedFile) -> list[Document]:
-    temp_file = tempfile.NamedTemporaryFile("wb", suffix=".pdf", delete=False)
-    temp_file.write(uploaded_file.read())
-
-    loader = PyMuPDFLoader(temp_file.name)
-    docs = loader.load()
-    os.unlink(temp_file.name) 
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=400,
-        chunk_overlap=100,
-        separators=["\n\n", "\n", ".", "?", "!", " ", ""],
-    )
-
-    return text_splitter.split_documents(docs)
+    try:
+        with tempfile.NamedTemporaryFile("wb", suffix=".pdf", delete=False) as temp_file:
+            temp_file.write(uploaded_file.read())
+            temp_file_path = temp_file.name
+        
+        loader = PyMuPDFLoader(temp_file_path)
+        docs = loader.load()
+        
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=400,
+            chunk_overlap=100,
+            separators=["\n\n", "\n", ".", "?", "!", " ", ""],
+        )
+        
+        split_docs = text_splitter.split_documents(docs)
+        
+        return split_docs
+    
+    finally:
+        try:
+            if 'temp_file_path' in locals():
+                os.unlink(temp_file_path)
+        except Exception as e:
+            print(f"Warning: Couldn't delete the temporary file: {e}")
 
 # Vector DB
 def get_vector_collection() -> chromadb.Collection:
