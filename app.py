@@ -174,9 +174,9 @@ if __name__ == "__main__":
             all_splits = process_document(uploaded_file)
             add_to_vector_collection(all_splits, normalize_uploaded_file_name)
 
-    st.header("Start your Quest")
+    st.header("The Quest Begins! 🚀")
     prompt = st.text_area("How can I help you today?")
-    ask = st.button("Ask")
+    ask = st.button("Ask ➡️")
 
     if ask and prompt:
         results = query_collection(prompt)
