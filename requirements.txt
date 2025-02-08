@@ -4,3 +4,4 @@ streamlit
 PyMuPDF
 langchain-community
 groq
+pysqlite3-binary
